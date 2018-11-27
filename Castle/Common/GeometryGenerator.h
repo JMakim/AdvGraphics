@@ -101,9 +101,12 @@ public:
 	///</summary>
     MeshData CreateCylinder(float bottomRadius, float topRadius, float height, uint32 sliceCount, uint32 stackCount);
 
+	MeshData CreateCone(float bottomRadius, float topRadius, float height, uint32 sliceCount, uint32 stackCount);
+
 	//added
 	MeshData CreateDiamond(float width, float height, float depth, uint32 numSubdivisions);
 
+	MeshData CreatePentagonalPrism(float width, float height, float depth, uint32 numSubdivisions);
 
 
 	///<summary>

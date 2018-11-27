@@ -332,9 +332,9 @@ void ShapesApp::OnMouseMove(WPARAM btnState, int x, int y)
 void ShapesApp::OnKeyboardInput(const GameTimer& gt)
 {
     if(GetAsyncKeyState('1') & 0x8000)
-        mIsWireframe = false;
-    else
         mIsWireframe = true;
+    else
+        mIsWireframe = false;
 }
  
 void ShapesApp::UpdateCamera(const GameTimer& gt)
@@ -533,6 +533,7 @@ void ShapesApp::BuildShapeGeometry()
 	GeometryGenerator::MeshData cylinder = geoGen.CreateCylinder(0.5f, 0.3f, 3.0f, 20, 20);
 	GeometryGenerator::MeshData diamond = geoGen.CreateDiamond(1.5f, 0.5f, 2.0f, 3); //added
 	GeometryGenerator::MeshData wall = geoGen.CreateWalls(1.5f, 0.5f, 2.0f, 3);//added
+	/*GeometryGenerator::MeshData cone = geoGen.CreateCone(0.5f, 0.3f, 3.0f, 20, 20);*/
 
 
 	//
@@ -547,6 +548,7 @@ void ShapesApp::BuildShapeGeometry()
 	UINT cylinderVertexOffset = sphereVertexOffset + (UINT)sphere.Vertices.size();
 	UINT diamondVertexOffset = cylinderVertexOffset + (UINT)cylinder.Vertices.size(); //added
 	UINT wallVertexOffset = diamondVertexOffset + (UINT)diamond.Vertices.size(); // added
+	/*UINT coneVertexOffset = wallVertexOffset + (UINT)wall.Vertices.size();*/
 
 	// Cache the starting index for each object in the concatenated index buffer.
 	UINT boxIndexOffset = 0;
@@ -555,6 +557,8 @@ void ShapesApp::BuildShapeGeometry()
 	UINT cylinderIndexOffset = sphereIndexOffset + (UINT)sphere.Indices32.size();
 	UINT diamondIndexOffset = cylinderIndexOffset + (UINT)cylinder.Indices32.size(); //added
 	UINT wallIndexOffset = diamondIndexOffset + (UINT)diamond.Indices32.size();
+	//UINT coneIndexOffset = wallIndexOffset + (UINT)wall.Indices32.size();
+
 
     // Define the SubmeshGeometry that cover different 
     // regions of the vertex/index buffers.
@@ -592,6 +596,10 @@ void ShapesApp::BuildShapeGeometry()
 	wallSubmesh.StartIndexLocation = wallIndexOffset;
 	wallSubmesh.BaseVertexLocation = wallVertexOffset;
 
+	//SubmeshGeometry coneSubmesh;
+	//coneSubmesh.IndexCount = (UINT)cone.Indices32.size();
+	//coneSubmesh.StartIndexLocation = coneIndexOffset;
+	//coneSubmesh.BaseVertexLocation = coneVertexOffset;
 
 	//
 	// Extract the vertex elements we are interested in and pack the
@@ -604,7 +612,8 @@ void ShapesApp::BuildShapeGeometry()
 		sphere.Vertices.size() +
 		cylinder.Vertices.size()+
 		diamond.Vertices.size()+ // added this
-		wall.Vertices.size(); // added this
+		wall.Vertices.size()
+/*		cone.Vertices.size()*/; // added this
 
 
 	std::vector<Vertex> vertices(totalVertexCount);
@@ -644,8 +653,14 @@ void ShapesApp::BuildShapeGeometry()
 	for (size_t i = 0; i < wall.Vertices.size(); ++i, ++k)
 	{
 		vertices[k].Pos = wall.Vertices[i].Position;
-		vertices[k].Color = XMFLOAT4(DirectX::Colors::DarkGreen);
+		vertices[k].Color = XMFLOAT4(DirectX::Colors::Silver);
 	}
+
+	//for (size_t i = 0; i < cone.Vertices.size(); ++i, ++k)
+	//{
+	//	vertices[k].Pos = cone.Vertices[i].Position;
+	//	vertices[k].Color = XMFLOAT4(DirectX::Colors::SteelBlue);
+	//}
 
 	std::vector<std::uint16_t> indices;
 	indices.insert(indices.end(), std::begin(box.GetIndices16()), std::end(box.GetIndices16()));
@@ -654,6 +669,7 @@ void ShapesApp::BuildShapeGeometry()
 	indices.insert(indices.end(), std::begin(cylinder.GetIndices16()), std::end(cylinder.GetIndices16()));
 	indices.insert(indices.end(), std::begin(diamond.GetIndices16()), std::end(diamond.GetIndices16())); //added
 	indices.insert(indices.end(), std::begin(wall.GetIndices16()), std::end(wall.GetIndices16())); //added
+	//indices.insert(indices.end(), std::begin(cone.GetIndices16()), std::end(cone.GetIndices16()));
 
     const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
     const UINT ibByteSize = (UINT)indices.size()  * sizeof(std::uint16_t);
@@ -684,6 +700,7 @@ void ShapesApp::BuildShapeGeometry()
 	geo->DrawArgs["cylinder"] = cylinderSubmesh;
 	geo->DrawArgs["diamond"] = diamondSubmesh; //added
 	geo->DrawArgs["wall"] = wallSubmesh;
+	//geo->DrawArgs["cone"] = coneSubmesh;
 
 	mGeometries[geo->Name] = std::move(geo);
 }
@@ -755,7 +772,7 @@ void ShapesApp::BuildRenderItems()
 	//added this item
 	auto diamondRitem = std::make_unique<RenderItem>();
 	XMStoreFloat4x4(&diamondRitem->World, XMMatrixScaling(2.0f, 2.0f, 2.0f)*XMMatrixTranslation(0.0f, 1.5f, 0.0f));
-	diamondRitem->ObjCBIndex = 22; // added c
+	diamondRitem->ObjCBIndex = 6; 
 	diamondRitem->Geo = mGeometries["shapeGeo"].get();
 	diamondRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 	diamondRitem->IndexCount = diamondRitem->Geo->DrawArgs["diamond"].IndexCount;
@@ -763,15 +780,8 @@ void ShapesApp::BuildRenderItems()
 	diamondRitem->BaseVertexLocation = diamondRitem->Geo->DrawArgs["diamond"].BaseVertexLocation;
 	mAllRitems.push_back(std::move(diamondRitem));
 
-	auto wallRitem = std::make_unique<RenderItem>();
-	XMStoreFloat4x4(&wallRitem->World, XMMatrixScaling(2.0f, 2.0f, 2.0f)*XMMatrixTranslation(0.0f, 1.5f, 0.0f));
-	wallRitem->ObjCBIndex = 23; // added changed this to 23 as it is the last object to be rendered
-	wallRitem->Geo = mGeometries["shapeGeo"].get();
-	wallRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	wallRitem->IndexCount = wallRitem->Geo->DrawArgs["wall"].IndexCount;
-	wallRitem->StartIndexLocation = wallRitem->Geo->DrawArgs["wall"].StartIndexLocation;
-	wallRitem->BaseVertexLocation = wallRitem->Geo->DrawArgs["wall"].BaseVertexLocation;
-	mAllRitems.push_back(std::move(wallRitem));
+	
+	
 
     auto gridRitem = std::make_unique<RenderItem>();
     gridRitem->World = MathHelper::Identity4x4();
@@ -783,19 +793,56 @@ void ShapesApp::BuildRenderItems()
     gridRitem->BaseVertexLocation = gridRitem->Geo->DrawArgs["grid"].BaseVertexLocation;
 	mAllRitems.push_back(std::move(gridRitem));
 
+
+	//added walls
+
+	UINT objCBIndexw = 7;
+
+	for (int i = 0; i < 2; ++i) 
+	{
+		auto frontWallRitem = std::make_unique<RenderItem>();
+		auto sideWallRitem = std::make_unique<RenderItem>();
+
+
+		XMStoreFloat4x4(&frontWallRitem->World, XMMatrixScaling(1.0f, 1.0f, 1.0f) * XMMatrixTranslation(0.0f, 2.5f, -8.75f + i * 18.0f));
+		frontWallRitem->ObjCBIndex = objCBIndexw++;
+		frontWallRitem->Geo = mGeometries["shapeGeo"].get();
+		frontWallRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		frontWallRitem->IndexCount = frontWallRitem->Geo->DrawArgs["wall"].IndexCount;
+		frontWallRitem->StartIndexLocation = frontWallRitem->Geo->DrawArgs["wall"].StartIndexLocation;
+		frontWallRitem->BaseVertexLocation = frontWallRitem->Geo->DrawArgs["wall"].BaseVertexLocation;
+		mAllRitems.push_back(std::move(frontWallRitem));
+
+
+
+
+		XMStoreFloat4x4(&sideWallRitem->World, XMMatrixScaling(0.1f, 1.0f, 8.90f) * XMMatrixTranslation(-7.0f + i * 14.0f, 2.5f, 0.0f ));
+		sideWallRitem->ObjCBIndex = objCBIndexw++;
+		sideWallRitem->Geo = mGeometries["shapeGeo"].get();
+		sideWallRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		sideWallRitem->IndexCount = sideWallRitem->Geo->DrawArgs["wall"].IndexCount;
+		sideWallRitem->StartIndexLocation = sideWallRitem->Geo->DrawArgs["wall"].StartIndexLocation;
+		sideWallRitem->BaseVertexLocation = sideWallRitem->Geo->DrawArgs["wall"].BaseVertexLocation;
+		mAllRitems.push_back(std::move(sideWallRitem));
+
+
+
+	}
+
+
 	UINT objCBIndex = 2;
-	for(int i = 0; i < 5; ++i)
+	for(int i = 0; i < 2; ++i) // multiple
 	{
 		auto leftCylRitem = std::make_unique<RenderItem>();
 		auto rightCylRitem = std::make_unique<RenderItem>();
-		auto leftSphereRitem = std::make_unique<RenderItem>();
-		auto rightSphereRitem = std::make_unique<RenderItem>();
+		//auto leftSphereRitem = std::make_unique<RenderItem>();
+		//auto rightSphereRitem = std::make_unique<RenderItem>();
 
-		XMMATRIX leftCylWorld = XMMatrixTranslation(-5.0f, 1.5f, -10.0f + i*5.0f);
-		XMMATRIX rightCylWorld = XMMatrixTranslation(+5.0f, 1.5f, -10.0f + i*5.0f);
+		XMMATRIX leftCylWorld = XMMatrixTranslation(-7.50f, 1.5f, -10.0f + i*20.0f);
+		XMMATRIX rightCylWorld = XMMatrixTranslation(+7.50f, 1.5f, -10.0f + i*20.0f);
 
-		XMMATRIX leftSphereWorld = XMMatrixTranslation(-5.0f, 3.5f, -10.0f + i*5.0f);
-		XMMATRIX rightSphereWorld = XMMatrixTranslation(+5.0f, 3.5f, -10.0f + i*5.0f);
+		/*XMMATRIX leftSphereWorld = XMMatrixTranslation(-5.0f, 3.5f, -10.0f + i*10.0f);
+		XMMATRIX rightSphereWorld = XMMatrixTranslation(+5.0f, 3.5f, -10.0f + i*10.0f);*/
 
 		XMStoreFloat4x4(&leftCylRitem->World, rightCylWorld);
 		leftCylRitem->ObjCBIndex = objCBIndex++;
@@ -813,7 +860,7 @@ void ShapesApp::BuildRenderItems()
 		rightCylRitem->StartIndexLocation = rightCylRitem->Geo->DrawArgs["cylinder"].StartIndexLocation;
 		rightCylRitem->BaseVertexLocation = rightCylRitem->Geo->DrawArgs["cylinder"].BaseVertexLocation;
 
-		XMStoreFloat4x4(&leftSphereRitem->World, leftSphereWorld);
+		/*XMStoreFloat4x4(&leftSphereRitem->World, leftSphereWorld);
 		leftSphereRitem->ObjCBIndex = objCBIndex++;
 		leftSphereRitem->Geo = mGeometries["shapeGeo"].get();
 		leftSphereRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
@@ -827,12 +874,12 @@ void ShapesApp::BuildRenderItems()
 		rightSphereRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 		rightSphereRitem->IndexCount = rightSphereRitem->Geo->DrawArgs["sphere"].IndexCount;
 		rightSphereRitem->StartIndexLocation = rightSphereRitem->Geo->DrawArgs["sphere"].StartIndexLocation;
-		rightSphereRitem->BaseVertexLocation = rightSphereRitem->Geo->DrawArgs["sphere"].BaseVertexLocation;
+		rightSphereRitem->BaseVertexLocation = rightSphereRitem->Geo->DrawArgs["sphere"].BaseVertexLocation;*/
 
 		mAllRitems.push_back(std::move(leftCylRitem));
 		mAllRitems.push_back(std::move(rightCylRitem));
-		mAllRitems.push_back(std::move(leftSphereRitem));
-		mAllRitems.push_back(std::move(rightSphereRitem));
+		//mAllRitems.push_back(std::move(leftSphereRitem));
+		//mAllRitems.push_back(std::move(rightSphereRitem));
 	}
 
 	// All the render items are opaque.
