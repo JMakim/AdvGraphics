@@ -7,5 +7,7 @@ G:\Github Repo\AdvGraphics\Castle\Common\GeometryGenerator.cpp(119,86): warning 
 G:\Github Repo\AdvGraphics\Castle\Common\GeometryGenerator.cpp(120,86): warning C4305: 'argument': truncation from 'double' to 'float'
 G:\Github Repo\AdvGraphics\Castle\Common\GeometryGenerator.cpp(121,86): warning C4305: 'argument': truncation from 'double' to 'float'
 G:\Github Repo\AdvGraphics\Castle\Common\GeometryGenerator.cpp(122,86): warning C4305: 'argument': truncation from 'double' to 'float'
+  ShapesApp.cpp
+  Generating Code...
 G:\Github Repo\AdvGraphics\Castle\Common\GeometryGenerator.cpp(501,11): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
   Shapes.vcxproj -> G:\Github Repo\AdvGraphics\Castle\Castle\Shapes\x64\Debug\Shapes.exe

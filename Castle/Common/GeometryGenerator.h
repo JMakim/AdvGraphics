@@ -78,7 +78,7 @@ public:
 	/// Creates a box centered at the origin with the given dimensions, where each
     /// face has m rows and n columns of vertices.
 	///</summary>
-    MeshData CreateBox(float width, float height, float depth, uint32 numSubdivisions);
+    MeshData CreatePedastal(float width, float height, float depth, uint32 numSubdivisions);
 
 	MeshData CreateWalls(float width, float height, float depth, uint32 numSubdivisions);
 

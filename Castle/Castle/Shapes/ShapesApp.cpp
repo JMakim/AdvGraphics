@@ -527,13 +527,13 @@ void ShapesApp::BuildShadersAndInputLayout()
 void ShapesApp::BuildShapeGeometry()
 {
     GeometryGenerator geoGen;
-	GeometryGenerator::MeshData box = geoGen.CreateBox(1.5f, 0.5f, 1.5f, 3);
+	GeometryGenerator::MeshData pedastal = geoGen.CreatePedastal(1.5f, 0.5f, 1.5f, 3);
 	GeometryGenerator::MeshData grid = geoGen.CreateGrid(20.0f, 30.0f, 60, 40);
 	GeometryGenerator::MeshData sphere = geoGen.CreateSphere(0.5f, 20, 20);
 	GeometryGenerator::MeshData cylinder = geoGen.CreateCylinder(0.5f, 0.3f, 3.0f, 20, 20);
 	GeometryGenerator::MeshData diamond = geoGen.CreateDiamond(1.5f, 0.5f, 2.0f, 3); //added
 	GeometryGenerator::MeshData wall = geoGen.CreateWalls(1.5f, 0.5f, 2.0f, 3);//added
-	GeometryGenerator::MeshData ramp = geoGen.CreateRamp(1.5f, 0.5f, 1.5f, 3);
+	GeometryGenerator::MeshData ramp = geoGen.CreateRamp(1.5f, 0.5f, 1.5f, 3);// added
 
 
 	//
@@ -542,8 +542,8 @@ void ShapesApp::BuildShapeGeometry()
 	//
 
 	// Cache the vertex offsets to each object in the concatenated vertex buffer.
-	UINT boxVertexOffset = 0;
-	UINT gridVertexOffset = (UINT)box.Vertices.size();
+	UINT pedastalVertexOffset = 0;
+	UINT gridVertexOffset = (UINT)pedastal.Vertices.size();
 	UINT sphereVertexOffset = gridVertexOffset + (UINT)grid.Vertices.size();
 	UINT cylinderVertexOffset = sphereVertexOffset + (UINT)sphere.Vertices.size();
 	UINT diamondVertexOffset = cylinderVertexOffset + (UINT)cylinder.Vertices.size(); //added
@@ -551,8 +551,8 @@ void ShapesApp::BuildShapeGeometry()
 	UINT rampVertexOffset = wallVertexOffset + (UINT)wall.Vertices.size();
 
 	// Cache the starting index for each object in the concatenated index buffer.
-	UINT boxIndexOffset = 0;
-	UINT gridIndexOffset = (UINT)box.Indices32.size();
+	UINT pedastalIndexOffset = 0;
+	UINT gridIndexOffset = (UINT)pedastal.Indices32.size();
 	UINT sphereIndexOffset = gridIndexOffset + (UINT)grid.Indices32.size();
 	UINT cylinderIndexOffset = sphereIndexOffset + (UINT)sphere.Indices32.size();
 	UINT diamondIndexOffset = cylinderIndexOffset + (UINT)cylinder.Indices32.size(); //added
@@ -563,10 +563,10 @@ void ShapesApp::BuildShapeGeometry()
     // Define the SubmeshGeometry that cover different 
     // regions of the vertex/index buffers.
 
-	SubmeshGeometry boxSubmesh;
-	boxSubmesh.IndexCount = (UINT)box.Indices32.size();
-	boxSubmesh.StartIndexLocation = boxIndexOffset;
-	boxSubmesh.BaseVertexLocation = boxVertexOffset;
+	SubmeshGeometry pedastalSubmesh;
+	pedastalSubmesh.IndexCount = (UINT)pedastal.Indices32.size();
+	pedastalSubmesh.StartIndexLocation = pedastalIndexOffset;
+	pedastalSubmesh.BaseVertexLocation = pedastalVertexOffset;
 
 	SubmeshGeometry gridSubmesh;
 	gridSubmesh.IndexCount = (UINT)grid.Indices32.size();
@@ -607,7 +607,7 @@ void ShapesApp::BuildShapeGeometry()
 	//
 
 	auto totalVertexCount =
-		box.Vertices.size() +
+		pedastal.Vertices.size() +
 		grid.Vertices.size() +
 		sphere.Vertices.size() +
 		cylinder.Vertices.size()+
@@ -619,9 +619,9 @@ void ShapesApp::BuildShapeGeometry()
 	std::vector<Vertex> vertices(totalVertexCount);
 
 	UINT k = 0;
-	for(size_t i = 0; i < box.Vertices.size(); ++i, ++k)
+	for(size_t i = 0; i < pedastal.Vertices.size(); ++i, ++k)
 	{
-		vertices[k].Pos = box.Vertices[i].Position;
+		vertices[k].Pos = pedastal.Vertices[i].Position;
         vertices[k].Color = XMFLOAT4(DirectX::Colors::Gray);
 	}
 
@@ -663,7 +663,7 @@ void ShapesApp::BuildShapeGeometry()
 	}
 
 	std::vector<std::uint16_t> indices;
-	indices.insert(indices.end(), std::begin(box.GetIndices16()), std::end(box.GetIndices16()));
+	indices.insert(indices.end(), std::begin(pedastal.GetIndices16()), std::end(pedastal.GetIndices16()));
 	indices.insert(indices.end(), std::begin(grid.GetIndices16()), std::end(grid.GetIndices16()));
 	indices.insert(indices.end(), std::begin(sphere.GetIndices16()), std::end(sphere.GetIndices16()));
 	indices.insert(indices.end(), std::begin(cylinder.GetIndices16()), std::end(cylinder.GetIndices16()));
@@ -694,7 +694,7 @@ void ShapesApp::BuildShapeGeometry()
 	geo->IndexFormat = DXGI_FORMAT_R16_UINT;
 	geo->IndexBufferByteSize = ibByteSize;
 
-	geo->DrawArgs["box"] = boxSubmesh;
+	geo->DrawArgs["pedastal"] = pedastalSubmesh;
 	geo->DrawArgs["grid"] = gridSubmesh;
 	geo->DrawArgs["sphere"] = sphereSubmesh;
 	geo->DrawArgs["cylinder"] = cylinderSubmesh;
@@ -758,15 +758,15 @@ void ShapesApp::BuildFrameResources()
 
 void ShapesApp::BuildRenderItems()
 {
-	auto boxRitem = std::make_unique<RenderItem>();
-	XMStoreFloat4x4(&boxRitem->World, XMMatrixScaling(2.0f, 2.0f, 2.0f)*XMMatrixTranslation(0.0f, 0.5f, 0.0f));
-	boxRitem->ObjCBIndex = 0;
-	boxRitem->Geo = mGeometries["shapeGeo"].get();
-	boxRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	boxRitem->IndexCount = boxRitem->Geo->DrawArgs["box"].IndexCount;
-	boxRitem->StartIndexLocation = boxRitem->Geo->DrawArgs["box"].StartIndexLocation;
-	boxRitem->BaseVertexLocation = boxRitem->Geo->DrawArgs["box"].BaseVertexLocation;
-	mAllRitems.push_back(std::move(boxRitem));
+	auto pedastalRitem = std::make_unique<RenderItem>();
+	XMStoreFloat4x4(&pedastalRitem->World, XMMatrixScaling(2.0f, 2.0f, 2.0f)*XMMatrixTranslation(0.0f, 0.5f, 0.0f));
+	pedastalRitem->ObjCBIndex = 0;
+	pedastalRitem->Geo = mGeometries["shapeGeo"].get();
+	pedastalRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	pedastalRitem->IndexCount = pedastalRitem->Geo->DrawArgs["pedastal"].IndexCount;
+	pedastalRitem->StartIndexLocation = pedastalRitem->Geo->DrawArgs["pedastal"].StartIndexLocation;
+	pedastalRitem->BaseVertexLocation = pedastalRitem->Geo->DrawArgs["pedastal"].BaseVertexLocation;
+	mAllRitems.push_back(std::move(pedastalRitem));
 
 
 	//added this item
