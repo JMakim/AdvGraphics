@@ -106,7 +106,7 @@ public:
 	//added
 	MeshData CreateDiamond(float width, float height, float depth, uint32 numSubdivisions);
 
-	MeshData CreatePentagonalPrism(float width, float height, float depth, uint32 numSubdivisions);
+	MeshData CreatePyramid(float width, float height, float depth, uint32 numSubdivisions);
 
 
 	///<summary>
