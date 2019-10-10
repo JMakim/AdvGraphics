@@ -107,6 +107,9 @@ public:
 	MeshData CreateDiamond(float width, float height, float depth, uint32 numSubdivisions);
 
 	MeshData CreatePyramid(float width, float height, float depth, uint32 numSubdivisions);
+	
+	MeshData CreateKite(float width, float height, float depth, uint32 numSubdivisions);
+
 
 
 	///<summary>

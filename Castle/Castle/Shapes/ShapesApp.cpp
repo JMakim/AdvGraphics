@@ -535,6 +535,7 @@ void ShapesApp::BuildShapeGeometry()
 	GeometryGenerator::MeshData wall = geoGen.CreateWalls(1.5f, 0.5f, 2.0f, 3);//added
 	GeometryGenerator::MeshData ramp = geoGen.CreateRamp(1.5f, 0.5f, 1.5f, 3);// added
 	GeometryGenerator::MeshData pyramid = geoGen.CreatePyramid(1.5f, 0.5f, 1.5f, 3);// added
+	GeometryGenerator::MeshData kite = geoGen.CreateKite(1.5f, 0.5f, 1.5f, 3);// added
 
 
 
@@ -552,6 +553,7 @@ void ShapesApp::BuildShapeGeometry()
 	UINT wallVertexOffset = diamondVertexOffset + (UINT)diamond.Vertices.size(); // added
 	UINT rampVertexOffset = wallVertexOffset + (UINT)wall.Vertices.size();
 	UINT pyramidVertexOffset = rampVertexOffset + (UINT)ramp.Vertices.size();
+	UINT kiteVertexOffset = pyramidVertexOffset + (UINT)pyramid.Vertices.size();
 
 	// Cache the starting index for each object in the concatenated index buffer.
 	UINT pedastalIndexOffset = 0;
@@ -562,6 +564,7 @@ void ShapesApp::BuildShapeGeometry()
 	UINT wallIndexOffset = diamondIndexOffset + (UINT)diamond.Indices32.size();
 	UINT rampIndexOffset = wallIndexOffset + (UINT)wall.Indices32.size();
 	UINT pyramidIndexOffset = rampIndexOffset + (UINT)ramp.Indices32.size();
+	UINT kiteIndexOffset = pyramidIndexOffset + (UINT)pyramid.Indices32.size();
 
 
     // Define the SubmeshGeometry that cover different 
@@ -609,6 +612,11 @@ void ShapesApp::BuildShapeGeometry()
 	pyramidSubmesh.IndexCount = (UINT)pyramid.Indices32.size();
 	pyramidSubmesh.StartIndexLocation = pyramidIndexOffset;
 	pyramidSubmesh.BaseVertexLocation = pyramidVertexOffset;
+	
+	SubmeshGeometry kiteSubmesh;
+	kiteSubmesh.IndexCount = (UINT)kite.Indices32.size();
+	kiteSubmesh.StartIndexLocation = kiteIndexOffset;
+	kiteSubmesh.BaseVertexLocation = kiteVertexOffset;
 
 	//
 	// Extract the vertex elements we are interested in and pack the
@@ -623,7 +631,8 @@ void ShapesApp::BuildShapeGeometry()
 		diamond.Vertices.size()+ // added this
 		wall.Vertices.size()+ // added this
 		ramp.Vertices.size() +  // added this
-		pyramid.Vertices.size(); // added this
+		pyramid.Vertices.size() +// added this
+		kite.Vertices.size(); // added this
 
 
 	std::vector<Vertex> vertices(totalVertexCount);
@@ -677,6 +686,12 @@ void ShapesApp::BuildShapeGeometry()
 		vertices[k].Pos = pyramid.Vertices[i].Position;
 		vertices[k].Color = XMFLOAT4(DirectX::Colors::Red); //pyramid
 	}
+	
+	for (size_t i = 0; i < kite.Vertices.size(); ++i, ++k)
+	{
+		vertices[k].Pos = kite.Vertices[i].Position;
+		vertices[k].Color = XMFLOAT4(DirectX::Colors::Teal); //kite
+	}
 
 	std::vector<std::uint16_t> indices;
 	indices.insert(indices.end(), std::begin(pedastal.GetIndices16()), std::end(pedastal.GetIndices16()));
@@ -687,6 +702,7 @@ void ShapesApp::BuildShapeGeometry()
 	indices.insert(indices.end(), std::begin(wall.GetIndices16()), std::end(wall.GetIndices16())); //added
 	indices.insert(indices.end(), std::begin(ramp.GetIndices16()), std::end(ramp.GetIndices16()));
 	indices.insert(indices.end(), std::begin(pyramid.GetIndices16()), std::end(pyramid.GetIndices16()));
+	indices.insert(indices.end(), std::begin(kite.GetIndices16()), std::end(kite.GetIndices16()));
 
     const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
     const UINT ibByteSize = (UINT)indices.size()  * sizeof(std::uint16_t);
@@ -719,6 +735,7 @@ void ShapesApp::BuildShapeGeometry()
 	geo->DrawArgs["wall"] = wallSubmesh;
 	geo->DrawArgs["ramp"] = rampSubmesh;
 	geo->DrawArgs["pyramid"] = pyramidSubmesh;
+	geo->DrawArgs["kite"] = kiteSubmesh;
 
 	mGeometries[geo->Name] = std::move(geo);
 }
@@ -855,7 +872,7 @@ void ShapesApp::BuildRenderItems()
 	rampRitem->BaseVertexLocation = rampRitem->Geo->DrawArgs["ramp"].BaseVertexLocation;
 	mAllRitems.push_back(std::move(rampRitem));
 
-	UINT objCBIndex = 2; // 2-5
+	UINT objCBIndex = 2; // 2-9
 	for(int i = 0; i < 2; ++i) // multiple
 	{
 		auto leftCylRitem = std::make_unique<RenderItem>();
@@ -886,7 +903,7 @@ void ShapesApp::BuildRenderItems()
 		rightCylRitem->StartIndexLocation = rightCylRitem->Geo->DrawArgs["cylinder"].StartIndexLocation;
 		rightCylRitem->BaseVertexLocation = rightCylRitem->Geo->DrawArgs["cylinder"].BaseVertexLocation;
 
-		XMStoreFloat4x4(&frontPyramidRitem->World, XMMatrixScaling(1.0f, 1.0f, 1.0f) * XMMatrixTranslation(-7.5f + i * 15.0f, 7.8f, -10.0f));
+		XMStoreFloat4x4(&frontPyramidRitem->World, XMMatrixScaling(1.0f, 2.0f, 1.0f) * XMMatrixTranslation(-7.5f + i * 15.0f, 8.0f, -10.0f));
 		frontPyramidRitem->ObjCBIndex = objCBIndexw++;
 		frontPyramidRitem->Geo = mGeometries["shapeGeo"].get();
 		frontPyramidRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
@@ -896,9 +913,7 @@ void ShapesApp::BuildRenderItems()
 		mAllRitems.push_back(std::move(frontPyramidRitem));
 
 
-
-
-		XMStoreFloat4x4(&backPyramidRitem->World, XMMatrixScaling(1.0f, 1.0f, 1.0f) * XMMatrixTranslation(-7.5f + i * 15.0f, 7.8f, 10.0f));
+		XMStoreFloat4x4(&backPyramidRitem->World, XMMatrixScaling(1.0f, 2.0f, 1.0f) * XMMatrixTranslation(-7.5f + i * 15.0f, 8.0f, 10.0f));
 		backPyramidRitem->ObjCBIndex = objCBIndexw++;
 		backPyramidRitem->Geo = mGeometries["shapeGeo"].get();
 		backPyramidRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
@@ -914,36 +929,16 @@ void ShapesApp::BuildRenderItems()
 	}
 
 
-	/*UINT objCBIndexw = 12;
-
-	for (int i = 0; i < 2; ++i)
-	{
-		auto frontPyramidRitem = std::make_unique<RenderItem>();
-		auto sidePyramidRitem = std::make_unique<RenderItem>();
-
-
-		XMStoreFloat4x4(&frontPyramidRitem->World, XMMatrixScaling(1.0f, 1.0f, 1.0f) * XMMatrixTranslation(0.0f, 2.5f, -8.75f + i * 18.0f));
-		frontPyramidRitem->ObjCBIndex = objCBIndexw++;
-		frontPyramidRitem->Geo = mGeometries["shapeGeo"].get();
-		frontPyramidRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-		frontPyramidRitem->IndexCount = frontPyramidRitem->Geo->DrawArgs["pyramid"].IndexCount;
-		frontPyramidRitem->StartIndexLocation = frontPyramidRitem->Geo->DrawArgs["pyramid"].StartIndexLocation;
-		frontPyramidRitem->BaseVertexLocation = frontPyramidRitem->Geo->DrawArgs["pyramid"].BaseVertexLocation;
-		mAllRitems.push_back(std::move(frontPyramidRitem));
-
-
-
-
-		XMStoreFloat4x4(&sidePyramidRitem->World, XMMatrixScaling(0.1f, 1.0f, 8.90f) * XMMatrixTranslation(-7.0f + i * 14.0f, 2.5f, 0.0f));
-		sidePyramidRitem->ObjCBIndex = objCBIndexw++;
-		sidePyramidRitem->Geo = mGeometries["shapeGeo"].get();
-		sidePyramidRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-		sidePyramidRitem->IndexCount = sidePyramidRitem->Geo->DrawArgs["pyramid"].IndexCount;
-		sidePyramidRitem->StartIndexLocation = sidePyramidRitem->Geo->DrawArgs["pyramid"].StartIndexLocation;
-		sidePyramidRitem->BaseVertexLocation = sidePyramidRitem->Geo->DrawArgs["pyramid"].BaseVertexLocation;
-		mAllRitems.push_back(std::move(sidePyramidRitem));
-
-	}*/
+	auto kiteRitem = std::make_unique<RenderItem>();
+	XMStoreFloat4x4(&kiteRitem->World, XMMatrixScaling(2.0f, 2.0f, 2.0f) * XMMatrixTranslation(0.0f, 1.0f, 9.25f));
+	kiteRitem->ObjCBIndex = 16;
+	kiteRitem->Geo = mGeometries["shapeGeo"].get();
+	kiteRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	kiteRitem->IndexCount = kiteRitem->Geo->DrawArgs["kite"].IndexCount;
+	kiteRitem->StartIndexLocation = kiteRitem->Geo->DrawArgs["kite"].StartIndexLocation;
+	kiteRitem->BaseVertexLocation = kiteRitem->Geo->DrawArgs["kite"].BaseVertexLocation;
+	mAllRitems.push_back(std::move(kiteRitem));
+	
 
 
 	// All the render items are opaque.
