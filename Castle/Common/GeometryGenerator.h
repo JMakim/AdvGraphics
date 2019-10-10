@@ -110,6 +110,8 @@ public:
 	
 	MeshData CreateKite(float width, float height, float depth, uint32 numSubdivisions);
 
+	MeshData CreatePentagon(float width, float height, float depth, uint32 numSubdivisions);
+
 
 
 	///<summary>

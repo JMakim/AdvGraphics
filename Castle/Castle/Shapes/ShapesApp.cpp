@@ -536,6 +536,7 @@ void ShapesApp::BuildShapeGeometry()
 	GeometryGenerator::MeshData ramp = geoGen.CreateRamp(1.5f, 0.5f, 1.5f, 3);// added
 	GeometryGenerator::MeshData pyramid = geoGen.CreatePyramid(1.5f, 0.5f, 1.5f, 3);// added
 	GeometryGenerator::MeshData kite = geoGen.CreateKite(1.5f, 0.5f, 1.5f, 3);// added
+	GeometryGenerator::MeshData pentagon = geoGen.CreatePentagon(1.5f, 0.5f, 1.5f, 3);// added
 
 
 
@@ -554,6 +555,7 @@ void ShapesApp::BuildShapeGeometry()
 	UINT rampVertexOffset = wallVertexOffset + (UINT)wall.Vertices.size();
 	UINT pyramidVertexOffset = rampVertexOffset + (UINT)ramp.Vertices.size();
 	UINT kiteVertexOffset = pyramidVertexOffset + (UINT)pyramid.Vertices.size();
+	UINT pentagonVertexOffset = kiteVertexOffset + (UINT)kite.Vertices.size();
 
 	// Cache the starting index for each object in the concatenated index buffer.
 	UINT pedastalIndexOffset = 0;
@@ -565,6 +567,7 @@ void ShapesApp::BuildShapeGeometry()
 	UINT rampIndexOffset = wallIndexOffset + (UINT)wall.Indices32.size();
 	UINT pyramidIndexOffset = rampIndexOffset + (UINT)ramp.Indices32.size();
 	UINT kiteIndexOffset = pyramidIndexOffset + (UINT)pyramid.Indices32.size();
+	UINT pentagonIndexOffset = kiteIndexOffset + (UINT)kite.Indices32.size();
 
 
     // Define the SubmeshGeometry that cover different 
@@ -617,6 +620,11 @@ void ShapesApp::BuildShapeGeometry()
 	kiteSubmesh.IndexCount = (UINT)kite.Indices32.size();
 	kiteSubmesh.StartIndexLocation = kiteIndexOffset;
 	kiteSubmesh.BaseVertexLocation = kiteVertexOffset;
+	
+	SubmeshGeometry pentagonSubmesh;
+	pentagonSubmesh.IndexCount = (UINT)pentagon.Indices32.size();
+	pentagonSubmesh.StartIndexLocation = pentagonIndexOffset;
+	pentagonSubmesh.BaseVertexLocation = pentagonVertexOffset;
 
 	//
 	// Extract the vertex elements we are interested in and pack the
@@ -632,7 +640,8 @@ void ShapesApp::BuildShapeGeometry()
 		wall.Vertices.size()+ // added this
 		ramp.Vertices.size() +  // added this
 		pyramid.Vertices.size() +// added this
-		kite.Vertices.size(); // added this
+		kite.Vertices.size() + // added this
+		pentagon.Vertices.size(); // added this
 
 
 	std::vector<Vertex> vertices(totalVertexCount);
@@ -692,6 +701,12 @@ void ShapesApp::BuildShapeGeometry()
 		vertices[k].Pos = kite.Vertices[i].Position;
 		vertices[k].Color = XMFLOAT4(DirectX::Colors::Teal); //kite
 	}
+	
+	for (size_t i = 0; i < pentagon.Vertices.size(); ++i, ++k)
+	{
+		vertices[k].Pos = pentagon.Vertices[i].Position;
+		vertices[k].Color = XMFLOAT4(DirectX::Colors::Black); //pentagon
+	}
 
 	std::vector<std::uint16_t> indices;
 	indices.insert(indices.end(), std::begin(pedastal.GetIndices16()), std::end(pedastal.GetIndices16()));
@@ -703,6 +718,7 @@ void ShapesApp::BuildShapeGeometry()
 	indices.insert(indices.end(), std::begin(ramp.GetIndices16()), std::end(ramp.GetIndices16()));
 	indices.insert(indices.end(), std::begin(pyramid.GetIndices16()), std::end(pyramid.GetIndices16()));
 	indices.insert(indices.end(), std::begin(kite.GetIndices16()), std::end(kite.GetIndices16()));
+	indices.insert(indices.end(), std::begin(pentagon.GetIndices16()), std::end(pentagon.GetIndices16()));
 
     const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
     const UINT ibByteSize = (UINT)indices.size()  * sizeof(std::uint16_t);
@@ -736,6 +752,7 @@ void ShapesApp::BuildShapeGeometry()
 	geo->DrawArgs["ramp"] = rampSubmesh;
 	geo->DrawArgs["pyramid"] = pyramidSubmesh;
 	geo->DrawArgs["kite"] = kiteSubmesh;
+	geo->DrawArgs["pentagon"] = pentagonSubmesh;
 
 	mGeometries[geo->Name] = std::move(geo);
 }
@@ -938,6 +955,16 @@ void ShapesApp::BuildRenderItems()
 	kiteRitem->StartIndexLocation = kiteRitem->Geo->DrawArgs["kite"].StartIndexLocation;
 	kiteRitem->BaseVertexLocation = kiteRitem->Geo->DrawArgs["kite"].BaseVertexLocation;
 	mAllRitems.push_back(std::move(kiteRitem));
+	
+	auto pentagonRitem = std::make_unique<RenderItem>();
+	XMStoreFloat4x4(&pentagonRitem->World, XMMatrixScaling(2.0f, 2.0f, 2.0f) * XMMatrixTranslation(0.0f, 2.5f, -8.75f));
+	pentagonRitem->ObjCBIndex = 17;
+	pentagonRitem->Geo = mGeometries["shapeGeo"].get();
+	pentagonRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	pentagonRitem->IndexCount = pentagonRitem->Geo->DrawArgs["pentagon"].IndexCount;
+	pentagonRitem->StartIndexLocation = pentagonRitem->Geo->DrawArgs["pentagon"].StartIndexLocation;
+	pentagonRitem->BaseVertexLocation = pentagonRitem->Geo->DrawArgs["pentagon"].BaseVertexLocation;
+	mAllRitems.push_back(std::move(pentagonRitem));
 	
 
 
