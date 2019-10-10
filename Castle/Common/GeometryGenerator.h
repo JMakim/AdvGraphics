@@ -101,7 +101,7 @@ public:
 	///</summary>
     MeshData CreateCylinder(float bottomRadius, float topRadius, float height, uint32 sliceCount, uint32 stackCount);
 
-	MeshData CreateCone(float bottomRadius, float topRadius, float height, uint32 sliceCount, uint32 stackCount);
+	MeshData CreateRamp(float width, float height, float depth, uint32 numSubdivisions);
 
 	//added
 	MeshData CreateDiamond(float width, float height, float depth, uint32 numSubdivisions);

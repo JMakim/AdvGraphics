@@ -533,7 +533,7 @@ void ShapesApp::BuildShapeGeometry()
 	GeometryGenerator::MeshData cylinder = geoGen.CreateCylinder(0.5f, 0.3f, 3.0f, 20, 20);
 	GeometryGenerator::MeshData diamond = geoGen.CreateDiamond(1.5f, 0.5f, 2.0f, 3); //added
 	GeometryGenerator::MeshData wall = geoGen.CreateWalls(1.5f, 0.5f, 2.0f, 3);//added
-	/*GeometryGenerator::MeshData cone = geoGen.CreateCone(0.5f, 0.3f, 3.0f, 20, 20);*/
+	GeometryGenerator::MeshData ramp = geoGen.CreateRamp(1.5f, 0.5f, 1.5f, 3);
 
 
 	//
@@ -548,7 +548,7 @@ void ShapesApp::BuildShapeGeometry()
 	UINT cylinderVertexOffset = sphereVertexOffset + (UINT)sphere.Vertices.size();
 	UINT diamondVertexOffset = cylinderVertexOffset + (UINT)cylinder.Vertices.size(); //added
 	UINT wallVertexOffset = diamondVertexOffset + (UINT)diamond.Vertices.size(); // added
-	/*UINT coneVertexOffset = wallVertexOffset + (UINT)wall.Vertices.size();*/
+	UINT rampVertexOffset = wallVertexOffset + (UINT)wall.Vertices.size();
 
 	// Cache the starting index for each object in the concatenated index buffer.
 	UINT boxIndexOffset = 0;
@@ -557,7 +557,7 @@ void ShapesApp::BuildShapeGeometry()
 	UINT cylinderIndexOffset = sphereIndexOffset + (UINT)sphere.Indices32.size();
 	UINT diamondIndexOffset = cylinderIndexOffset + (UINT)cylinder.Indices32.size(); //added
 	UINT wallIndexOffset = diamondIndexOffset + (UINT)diamond.Indices32.size();
-	//UINT coneIndexOffset = wallIndexOffset + (UINT)wall.Indices32.size();
+	UINT rampIndexOffset = wallIndexOffset + (UINT)wall.Indices32.size();
 
 
     // Define the SubmeshGeometry that cover different 
@@ -596,10 +596,10 @@ void ShapesApp::BuildShapeGeometry()
 	wallSubmesh.StartIndexLocation = wallIndexOffset;
 	wallSubmesh.BaseVertexLocation = wallVertexOffset;
 
-	//SubmeshGeometry coneSubmesh;
-	//coneSubmesh.IndexCount = (UINT)cone.Indices32.size();
-	//coneSubmesh.StartIndexLocation = coneIndexOffset;
-	//coneSubmesh.BaseVertexLocation = coneVertexOffset;
+	SubmeshGeometry rampSubmesh;
+	rampSubmesh.IndexCount = (UINT)ramp.Indices32.size();
+	rampSubmesh.StartIndexLocation = rampIndexOffset;
+	rampSubmesh.BaseVertexLocation = rampVertexOffset;
 
 	//
 	// Extract the vertex elements we are interested in and pack the
@@ -612,8 +612,8 @@ void ShapesApp::BuildShapeGeometry()
 		sphere.Vertices.size() +
 		cylinder.Vertices.size()+
 		diamond.Vertices.size()+ // added this
-		wall.Vertices.size()
-/*		cone.Vertices.size()*/; // added this
+		wall.Vertices.size()+
+		ramp.Vertices.size(); // added this
 
 
 	std::vector<Vertex> vertices(totalVertexCount);
@@ -622,7 +622,7 @@ void ShapesApp::BuildShapeGeometry()
 	for(size_t i = 0; i < box.Vertices.size(); ++i, ++k)
 	{
 		vertices[k].Pos = box.Vertices[i].Position;
-        vertices[k].Color = XMFLOAT4(DirectX::Colors::DarkGreen);
+        vertices[k].Color = XMFLOAT4(DirectX::Colors::Gray);
 	}
 
 	for(size_t i = 0; i < grid.Vertices.size(); ++i, ++k)
@@ -640,27 +640,27 @@ void ShapesApp::BuildShapeGeometry()
 	for(size_t i = 0; i < cylinder.Vertices.size(); ++i, ++k)
 	{
 		vertices[k].Pos = cylinder.Vertices[i].Position;
-		vertices[k].Color = XMFLOAT4(DirectX::Colors::SteelBlue);
+		vertices[k].Color = XMFLOAT4(DirectX::Colors::SteelBlue); //Colomn
 	}
 	
 	//added this note new items needed to be at bottom or vertices will be messed up
 	for (size_t i = 0; i < diamond.Vertices.size(); ++i, ++k)
 	{
 		vertices[k].Pos = diamond.Vertices[i].Position;
-		vertices[k].Color = XMFLOAT4(DirectX::Colors::White);
+		vertices[k].Color = XMFLOAT4(DirectX::Colors::White); //diamond
 	}
 
 	for (size_t i = 0; i < wall.Vertices.size(); ++i, ++k)
 	{
 		vertices[k].Pos = wall.Vertices[i].Position;
-		vertices[k].Color = XMFLOAT4(DirectX::Colors::Silver);
+		vertices[k].Color = XMFLOAT4(DirectX::Colors::Silver);//walls
 	}
 
-	//for (size_t i = 0; i < cone.Vertices.size(); ++i, ++k)
-	//{
-	//	vertices[k].Pos = cone.Vertices[i].Position;
-	//	vertices[k].Color = XMFLOAT4(DirectX::Colors::SteelBlue);
-	//}
+	for (size_t i = 0; i < ramp.Vertices.size(); ++i, ++k)
+	{
+		vertices[k].Pos = ramp.Vertices[i].Position;
+		vertices[k].Color = XMFLOAT4(DirectX::Colors::SaddleBrown); //Ramp
+	}
 
 	std::vector<std::uint16_t> indices;
 	indices.insert(indices.end(), std::begin(box.GetIndices16()), std::end(box.GetIndices16()));
@@ -669,7 +669,7 @@ void ShapesApp::BuildShapeGeometry()
 	indices.insert(indices.end(), std::begin(cylinder.GetIndices16()), std::end(cylinder.GetIndices16()));
 	indices.insert(indices.end(), std::begin(diamond.GetIndices16()), std::end(diamond.GetIndices16())); //added
 	indices.insert(indices.end(), std::begin(wall.GetIndices16()), std::end(wall.GetIndices16())); //added
-	//indices.insert(indices.end(), std::begin(cone.GetIndices16()), std::end(cone.GetIndices16()));
+	indices.insert(indices.end(), std::begin(ramp.GetIndices16()), std::end(ramp.GetIndices16()));
 
     const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
     const UINT ibByteSize = (UINT)indices.size()  * sizeof(std::uint16_t);
@@ -700,7 +700,7 @@ void ShapesApp::BuildShapeGeometry()
 	geo->DrawArgs["cylinder"] = cylinderSubmesh;
 	geo->DrawArgs["diamond"] = diamondSubmesh; //added
 	geo->DrawArgs["wall"] = wallSubmesh;
-	//geo->DrawArgs["cone"] = coneSubmesh;
+	geo->DrawArgs["ramp"] = rampSubmesh;
 
 	mGeometries[geo->Name] = std::move(geo);
 }
@@ -828,7 +828,15 @@ void ShapesApp::BuildRenderItems()
 
 
 	}
-
+	auto rampRitem = std::make_unique<RenderItem>();
+	XMStoreFloat4x4(&rampRitem->World, XMMatrixScaling(2.0f, 2.0f, 2.0f) * XMMatrixTranslation(0.0f, 0.5f, 0.0f));
+	rampRitem->ObjCBIndex = 0;
+	rampRitem->Geo = mGeometries["shapeGeo"].get();
+	rampRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	rampRitem->IndexCount = rampRitem->Geo->DrawArgs["ramp"].IndexCount;
+	rampRitem->StartIndexLocation = rampRitem->Geo->DrawArgs["ramp"].StartIndexLocation;
+	rampRitem->BaseVertexLocation = rampRitem->Geo->DrawArgs["ramp"].BaseVertexLocation;
+	mAllRitems.push_back(std::move(rampRitem));
 
 	UINT objCBIndex = 2;
 	for(int i = 0; i < 2; ++i) // multiple

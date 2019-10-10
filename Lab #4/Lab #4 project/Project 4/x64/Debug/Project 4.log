@@ -4,16 +4,16 @@
   DDSTextureLoader.cpp
   GameTimer.cpp
   GeometryGenerator.cpp
-c:\users\101095903\documents\github\advgraphics\lab #4\common\geometrygenerator.cpp(115): warning C4305: 'argument': truncation from 'double' to 'float'
-c:\users\101095903\documents\github\advgraphics\lab #4\common\geometrygenerator.cpp(116): warning C4305: 'argument': truncation from 'double' to 'float'
-c:\users\101095903\documents\github\advgraphics\lab #4\common\geometrygenerator.cpp(117): warning C4305: 'argument': truncation from 'double' to 'float'
-c:\users\101095903\documents\github\advgraphics\lab #4\common\geometrygenerator.cpp(118): warning C4305: 'argument': truncation from 'double' to 'float'
-c:\users\101095903\documents\github\advgraphics\lab #4\common\geometrygenerator.cpp(119): warning C4305: 'argument': truncation from 'double' to 'float'
-c:\users\101095903\documents\github\advgraphics\lab #4\common\geometrygenerator.cpp(120): warning C4305: 'argument': truncation from 'double' to 'float'
-c:\users\101095903\documents\github\advgraphics\lab #4\common\geometrygenerator.cpp(121): warning C4305: 'argument': truncation from 'double' to 'float'
-c:\users\101095903\documents\github\advgraphics\lab #4\common\geometrygenerator.cpp(122): warning C4305: 'argument': truncation from 'double' to 'float'
+G:\Github Repo\AdvGraphics\Lab #4\Common\GeometryGenerator.cpp(115,86): warning C4305: 'argument': truncation from 'double' to 'float'
+G:\Github Repo\AdvGraphics\Lab #4\Common\GeometryGenerator.cpp(116,86): warning C4305: 'argument': truncation from 'double' to 'float'
+G:\Github Repo\AdvGraphics\Lab #4\Common\GeometryGenerator.cpp(117,86): warning C4305: 'argument': truncation from 'double' to 'float'
+G:\Github Repo\AdvGraphics\Lab #4\Common\GeometryGenerator.cpp(118,86): warning C4305: 'argument': truncation from 'double' to 'float'
+G:\Github Repo\AdvGraphics\Lab #4\Common\GeometryGenerator.cpp(119,86): warning C4305: 'argument': truncation from 'double' to 'float'
+G:\Github Repo\AdvGraphics\Lab #4\Common\GeometryGenerator.cpp(120,86): warning C4305: 'argument': truncation from 'double' to 'float'
+G:\Github Repo\AdvGraphics\Lab #4\Common\GeometryGenerator.cpp(121,86): warning C4305: 'argument': truncation from 'double' to 'float'
   MathHelper.cpp
   FrameResource.cpp
   ShapesApp.cpp
   Generating Code...
-  Project 4.vcxproj -> C:\Users\101095903\Documents\GitHub\AdvGraphics\Lab #4\Lab #4 project\Shapes\x64\Debug\Project 4.exe
+G:\Github Repo\AdvGraphics\Lab #4\Common\GeometryGenerator.cpp(122,86): warning C4305: 'argument': truncation from 'double' to 'float'
+  Project 4.vcxproj -> G:\Github Repo\AdvGraphics\Lab #4\Lab #4 project\Shapes\x64\Debug\Project 4.exe
