@@ -105,8 +105,6 @@ public:
 	///</summary>
     MeshData CreateGrid(float width, float depth, uint32 m, uint32 n);
 
-
-
 	///<summary>
 	/// Creates a cylinder parallel to the y-axis, and centered about the origin.  
 	/// The bottom and top radius can vary to form various cone shapes rather than true
