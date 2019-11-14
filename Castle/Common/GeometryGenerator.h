@@ -78,9 +78,7 @@ public:
 	/// Creates a box centered at the origin with the given dimensions, where each
     /// face has m rows and n columns of vertices.
 	///</summary>
-    MeshData CreatePedastal(float width, float height, float depth, uint32 numSubdivisions);
-
-	MeshData CreateWalls(float width, float height, float depth, uint32 numSubdivisions);
+    MeshData CreateBox(float width, float height, float depth, uint32 numSubdivisions);
 
 	///<summary>
 	/// Creates a sphere centered at the origin with the given radius.  The
@@ -99,19 +97,6 @@ public:
 	/// The bottom and top radius can vary to form various cone shapes rather than true
 	// cylinders.  The slices and stacks parameters control the degree of tessellation.
 	///</summary>
-    MeshData CreateCylinder(float bottomRadius, float topRadius, float height, uint32 sliceCount, uint32 stackCount);
-
-	MeshData CreateRamp(float width, float height, float depth, uint32 numSubdivisions);
-
-	//added
-	MeshData CreateDiamond(float width, float height, float depth, uint32 numSubdivisions);
-
-	MeshData CreatePyramid(float width, float height, float depth, uint32 numSubdivisions);
-	
-	MeshData CreateKite(float width, float height, float depth, uint32 numSubdivisions);
-
-	MeshData CreatePentagon(float width, float height, float depth, uint32 numSubdivisions);
-
 
 
 	///<summary>
@@ -120,13 +105,38 @@ public:
 	///</summary>
     MeshData CreateGrid(float width, float depth, uint32 m, uint32 n);
 
+
+
+	///<summary>
+	/// Creates a cylinder parallel to the y-axis, and centered about the origin.  
+	/// The bottom and top radius can vary to form various cone shapes rather than true
+	// cylinders.  The slices and stacks parameters control the degree of tessellation.
+	///</summary>
+	MeshData CreateCylinder(float bottomRadius, float topRadius, float height, uint32 sliceCount, uint32 stackCount);
+
+	MeshData CreateRamp(float width, float height, float depth, uint32 numSubdivisions);
+
+	//added
+	MeshData CreateDiamond(float width, float height, float depth, uint32 numSubdivisions);
+
+	MeshData CreatePyramid(float width, float height, float depth, uint32 numSubdivisions);
+
+	MeshData CreateKite(float width, float height, float depth, uint32 numSubdivisions);
+
+	MeshData CreatePentagon(float width, float height, float depth, uint32 numSubdivisions);
+
+	MeshData CreatePedastal(float width, float height, float depth, uint32 numSubdivisions);
+
+	MeshData CreateWalls(float width, float height, float depth, uint32 numSubdivisions);
+
+
 	///<summary>
 	/// Creates a quad aligned with the screen.  This is useful for postprocessing and screen effects.
 	///</summary>
     MeshData CreateQuad(float x, float y, float w, float h, float depth);
-
-private:
 	void Subdivide(MeshData& meshData);
+private:
+
     Vertex MidPoint(const Vertex& v0, const Vertex& v1);
     void BuildCylinderTopCap(float bottomRadius, float topRadius, float height, uint32 sliceCount, uint32 stackCount, MeshData& meshData);
     void BuildCylinderBottomCap(float bottomRadius, float topRadius, float height, uint32 sliceCount, uint32 stackCount, MeshData& meshData);
