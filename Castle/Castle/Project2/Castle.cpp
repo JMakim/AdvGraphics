@@ -642,6 +642,13 @@ void TreeBillboardsApp::LoadTextures()
 	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
 		mCommandList.Get(), bricks2Tex->Filename.c_str(),
 		bricks2Tex->Resource, bricks2Tex->UploadHeap));
+	
+	auto maze0Tex = std::make_unique<Texture>();
+	maze0Tex->Name = "maze0Tex";
+	maze0Tex->Filename = L"../../Textures/maze.dds";
+	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
+		mCommandList.Get(), maze0Tex->Filename.c_str(),
+		maze0Tex->Resource, maze0Tex->UploadHeap));
 
 	mTextures[grassTex->Name] = std::move(grassTex);
 	mTextures[waterTex->Name] = std::move(waterTex);
@@ -656,6 +663,7 @@ void TreeBillboardsApp::LoadTextures()
 	mTextures[roofTex->Name] = std::move(roofTex);
 	mTextures[metalTex->Name] = std::move(metalTex);
 	mTextures[bricks2Tex->Name] = std::move(bricks2Tex);
+	mTextures[maze0Tex->Name] = std::move(maze0Tex);
 }
 
 void TreeBillboardsApp::BuildRootSignature()
@@ -704,7 +712,7 @@ void TreeBillboardsApp::BuildDescriptorHeaps()
 	// Create the SRV heap.
 	//
 	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
-	srvHeapDesc.NumDescriptors = 14;
+	srvHeapDesc.NumDescriptors = 15;
 	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	ThrowIfFailed(md3dDevice->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&mSrvDescriptorHeap)));
@@ -728,6 +736,8 @@ void TreeBillboardsApp::BuildDescriptorHeaps()
 	auto roofTex = mTextures["roofTex"]->Resource;
 	auto metalTex = mTextures["metalTex"]->Resource;
 	auto bricks2Tex = mTextures["bricks2Tex"]->Resource;
+	auto maze0Tex = mTextures["maze0Tex"]->Resource;
+
 
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
@@ -810,6 +820,13 @@ void TreeBillboardsApp::BuildDescriptorHeaps()
 	srvDesc.Format = bricks2Tex->GetDesc().Format;
 	srvDesc.Texture2D.MipLevels = bricks2Tex->GetDesc().MipLevels;
 	md3dDevice->CreateShaderResourceView(bricks2Tex.Get(), &srvDesc, hDescriptor);
+	
+	// next descriptor
+	hDescriptor.Offset(1, mCbvSrvDescriptorSize);
+
+	srvDesc.Format = maze0Tex->GetDesc().Format;
+	srvDesc.Texture2D.MipLevels = maze0Tex->GetDesc().MipLevels;
+	md3dDevice->CreateShaderResourceView(maze0Tex.Get(), &srvDesc, hDescriptor);
 
 	// next descriptor
 	hDescriptor.Offset(1, mCbvSrvDescriptorSize);
@@ -1103,7 +1120,7 @@ void TreeBillboardsApp::BuildShapeGeometry()
 	GeometryGenerator::MeshData pyramid = geoGen.CreatePyramid(1.5f, 0.5f, 1.5f, 3);// added
 	GeometryGenerator::MeshData kite = geoGen.CreateKite(1.5f, 0.5f, 1.5f, 3);// added
 	GeometryGenerator::MeshData pentagon = geoGen.CreatePentagon(1.5f, 0.5f, 1.5f, 3);// added
-
+	GeometryGenerator::MeshData maze = geoGen.CreateBox(1.0, 1.0, 1.0, 3);
 
 	//
 	// We are concatenating all the geometry into one big vertex/index buffer.  So
@@ -1121,6 +1138,7 @@ void TreeBillboardsApp::BuildShapeGeometry()
 	UINT pyramidVertexOffset = rampVertexOffset + (UINT)ramp.Vertices.size();
 	UINT kiteVertexOffset = pyramidVertexOffset + (UINT)pyramid.Vertices.size();
 	UINT pentagonVertexOffset = kiteVertexOffset + (UINT)kite.Vertices.size();
+	UINT mazeVertexOffset = pentagonVertexOffset + (UINT)pentagon.Vertices.size();
 
 	// Cache the starting index for each object in the concatenated index buffer.
 	UINT pedastalIndexOffset = 0;
@@ -1133,6 +1151,7 @@ void TreeBillboardsApp::BuildShapeGeometry()
 	UINT pyramidIndexOffset = rampIndexOffset + (UINT)ramp.Indices32.size();
 	UINT kiteIndexOffset = pyramidIndexOffset + (UINT)pyramid.Indices32.size();
 	UINT pentagonIndexOffset = kiteIndexOffset + (UINT)kite.Indices32.size();
+	UINT mazeIndexOffset = pentagonIndexOffset + (UINT)pentagon.Indices32.size();
 
 
 	// Define the SubmeshGeometry that cover different 
@@ -1190,6 +1209,14 @@ void TreeBillboardsApp::BuildShapeGeometry()
 	pentagonSubmesh.IndexCount = (UINT)pentagon.Indices32.size();
 	pentagonSubmesh.StartIndexLocation = pentagonIndexOffset;
 	pentagonSubmesh.BaseVertexLocation = pentagonVertexOffset;
+	
+	
+	SubmeshGeometry mazeSubmesh;
+	mazeSubmesh.IndexCount = (UINT)maze.Indices32.size();
+	mazeSubmesh.StartIndexLocation = mazeIndexOffset;
+	mazeSubmesh.BaseVertexLocation = mazeVertexOffset;
+
+
 
 	//
 	// Extract the vertex elements we are interested in and pack the
@@ -1206,7 +1233,8 @@ void TreeBillboardsApp::BuildShapeGeometry()
 		ramp.Vertices.size() +  // added this
 		pyramid.Vertices.size() +// added this
 		kite.Vertices.size() + // added this
-		pentagon.Vertices.size(); // added this
+		pentagon.Vertices.size()+ // added this
+		maze.Vertices.size(); // added this
 
 	std::vector<Vertex> vertices(totalVertexCount);
 
@@ -1281,34 +1309,14 @@ void TreeBillboardsApp::BuildShapeGeometry()
 		vertices[k].Normal = pentagon.Vertices[i].Normal;
 		vertices[k].TexC = pentagon.Vertices[i].TexC; //pentagon
 	}
-	//UINT k = 0;
-	//for(size_t i = 0; i < box.Vertices.size(); ++i, ++k)
-	//{
-	//	vertices[k].Pos = box.Vertices[i].Position;
-	//	vertices[k].Normal = box.Vertices[i].Normal;
-	//	vertices[k].TexC = box.Vertices[i].TexC;
-	//}
 
-	//for(size_t i = 0; i < grid.Vertices.size(); ++i, ++k)
-	//{
-	//	vertices[k].Pos = grid.Vertices[i].Position;
-	//	vertices[k].Normal = grid.Vertices[i].Normal;
-	//	vertices[k].TexC = grid.Vertices[i].TexC;
-	//}
-
-	//for(size_t i = 0; i < sphere.Vertices.size(); ++i, ++k)
-	//{
-	//	vertices[k].Pos = sphere.Vertices[i].Position;
-	//	vertices[k].Normal = sphere.Vertices[i].Normal;
-	//	vertices[k].TexC = sphere.Vertices[i].TexC;
-	//}
-
-	//for(size_t i = 0; i < cylinder.Vertices.size(); ++i, ++k)
-	//{
-	//	vertices[k].Pos = cylinder.Vertices[i].Position;
-	//	vertices[k].Normal = cylinder.Vertices[i].Normal;
-	//	vertices[k].TexC = cylinder.Vertices[i].TexC;
-	//}
+	for (size_t i = 0; i < maze.Vertices.size(); ++i, ++k)
+	{
+		vertices[k].Pos = maze.Vertices[i].Position;
+		vertices[k].Normal = maze.Vertices[i].Normal;
+		vertices[k].TexC = maze.Vertices[i].TexC; //maze
+	}
+	
 
 	std::vector<std::uint16_t> indices;
 	indices.insert(indices.end(), std::begin(pedastal.GetIndices16()), std::end(pedastal.GetIndices16()));
@@ -1321,6 +1329,7 @@ void TreeBillboardsApp::BuildShapeGeometry()
 	indices.insert(indices.end(), std::begin(pyramid.GetIndices16()), std::end(pyramid.GetIndices16()));
 	indices.insert(indices.end(), std::begin(kite.GetIndices16()), std::end(kite.GetIndices16()));
 	indices.insert(indices.end(), std::begin(pentagon.GetIndices16()), std::end(pentagon.GetIndices16()));
+	indices.insert(indices.end(), std::begin(maze.GetIndices16()), std::end(maze.GetIndices16()));
 
 	const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
 	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
@@ -1355,6 +1364,7 @@ void TreeBillboardsApp::BuildShapeGeometry()
 	geo->DrawArgs["pyramid"] = pyramidSubmesh;
 	geo->DrawArgs["kite"] = kiteSubmesh;
 	geo->DrawArgs["pentagon"] = pentagonSubmesh;
+	geo->DrawArgs["maze"] = mazeSubmesh;
 
 	mGeometries[geo->Name] = std::move(geo);
 }
@@ -1498,8 +1508,8 @@ void TreeBillboardsApp::BuildMaterials()
 
 	auto treeSprites = std::make_unique<Material>();
 	treeSprites->Name = "treeSprites";
-	treeSprites->MatCBIndex = 12;
-	treeSprites->DiffuseSrvHeapIndex = 12;
+	treeSprites->MatCBIndex = 13;
+	treeSprites->DiffuseSrvHeapIndex = 13;
 	treeSprites->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	treeSprites->FresnelR0 = XMFLOAT3(0.01f, 0.01f, 0.01f);
 	treeSprites->Roughness = 0.125f;
@@ -1575,6 +1585,14 @@ void TreeBillboardsApp::BuildMaterials()
 	bricks2->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	bricks2->FresnelR0 = XMFLOAT3(0.02f, 0.02f, 0.02f);
 	bricks2->Roughness = 1.0f;
+	
+	auto maze0 = std::make_unique<Material>();
+	maze0->Name = "maze0";
+	maze0->MatCBIndex = 12;
+	maze0->DiffuseSrvHeapIndex = 12;
+	maze0->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+	maze0->FresnelR0 = XMFLOAT3(0.02f, 0.02f, 0.02f);
+	maze0->Roughness = 1.0f;
 
 	mMaterials["grass0"] = std::move(grass0);
 	mMaterials["water"] = std::move(water);
@@ -1589,6 +1607,7 @@ void TreeBillboardsApp::BuildMaterials()
 	mMaterials["roof0"] = std::move(roof0);
 	mMaterials["metal0"] = std::move(metal0);
 	mMaterials["bricks2"] = std::move(bricks2);
+	mMaterials["maze0"] = std::move(maze0);
 
 
 }
@@ -1610,30 +1629,7 @@ void TreeBillboardsApp::BuildRenderItems()
 
 	mRitemLayer[(int)RenderLayer::Transparent].push_back(wavesRitem.get());
 
-    /*auto gridRitem = std::make_unique<RenderItem>();
-    gridRitem->World = MathHelper::Identity4x4();
-	XMStoreFloat4x4(&gridRitem->TexTransform, XMMatrixScaling(5.0f, 5.0f, 1.0f));
-	gridRitem->ObjCBIndex = 1;
-	gridRitem->Mat = mMaterials["grass"].get();
-	gridRitem->Geo = mGeometries["landGeo"].get();
-	gridRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-    gridRitem->IndexCount = gridRitem->Geo->DrawArgs["grid"].IndexCount;
-    gridRitem->StartIndexLocation = gridRitem->Geo->DrawArgs["grid"].StartIndexLocation;
-    gridRitem->BaseVertexLocation = gridRitem->Geo->DrawArgs["grid"].BaseVertexLocation;
-
-	mRitemLayer[(int)RenderLayer::Opaque].push_back(gridRitem.get());*/
-
-	/*auto boxRitem = std::make_unique<RenderItem>();
-	XMStoreFloat4x4(&boxRitem->World, XMMatrixTranslation(3.0f, 2.0f, -9.0f));
-	boxRitem->ObjCBIndex = 1;
-	boxRitem->Mat = mMaterials["wirefence"].get();
-	boxRitem->Geo = mGeometries["boxGeo"].get();
-	boxRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	boxRitem->IndexCount = boxRitem->Geo->DrawArgs["box"].IndexCount;
-	boxRitem->StartIndexLocation = boxRitem->Geo->DrawArgs["box"].StartIndexLocation;
-	boxRitem->BaseVertexLocation = boxRitem->Geo->DrawArgs["box"].BaseVertexLocation;
-
-	mRitemLayer[(int)RenderLayer::AlphaTested].push_back(boxRitem.get());*/
+ 
 
 	auto treeSpritesRitem = std::make_unique<RenderItem>();
 	treeSpritesRitem->World = MathHelper::Identity4x4();
@@ -1645,10 +1641,7 @@ void TreeBillboardsApp::BuildRenderItems()
 	treeSpritesRitem->IndexCount = treeSpritesRitem->Geo->DrawArgs["points"].IndexCount;
 	treeSpritesRitem->StartIndexLocation = treeSpritesRitem->Geo->DrawArgs["points"].StartIndexLocation;
 	treeSpritesRitem->BaseVertexLocation = treeSpritesRitem->Geo->DrawArgs["points"].BaseVertexLocation;
-
 	mRitemLayer[(int)RenderLayer::AlphaTestedTreeSprites].push_back(treeSpritesRitem.get());
-
-
 
 
 	auto pedastalRitem = std::make_unique<RenderItem>();
@@ -1815,7 +1808,7 @@ void TreeBillboardsApp::BuildRenderItems()
 	mRitemLayer[(int)RenderLayer::Opaque].push_back(pentagonRitem.get());
 
 	auto grid2Ritem = std::make_unique<RenderItem>();
-	XMStoreFloat4x4(&grid2Ritem->World, XMMatrixScaling(30.0f, 1.0f, 30.0f)* XMMatrixTranslation(0.0f, 0.9f, 0.0f));
+	XMStoreFloat4x4(&grid2Ritem->World, XMMatrixScaling(30.0f, 1.0f, 50.0f)* XMMatrixTranslation(0.0f, 0.9f, -10.0f));
 	grid2Ritem->ObjCBIndex = 20;
 	grid2Ritem->Mat = mMaterials["grass0"].get();
 	grid2Ritem->Geo = mGeometries["shapeGeo"].get();
@@ -1824,7 +1817,122 @@ void TreeBillboardsApp::BuildRenderItems()
 	grid2Ritem->StartIndexLocation = grid2Ritem->Geo->DrawArgs["grid"].StartIndexLocation;
 	grid2Ritem->BaseVertexLocation = grid2Ritem->Geo->DrawArgs["grid"].BaseVertexLocation;
 	mRitemLayer[(int)RenderLayer::Opaque].push_back(grid2Ritem.get());
+	
 
+	
+
+
+
+	auto mazeRitem = std::make_unique<RenderItem>();
+	XMStoreFloat4x4(&mazeRitem->World, XMMatrixScaling(8.0f, 3.0f, 1.0f)* XMMatrixTranslation(5.0f, 2.5f, -32.0f));
+	mazeRitem->ObjCBIndex = 21;
+	mazeRitem->Mat = mMaterials["maze0"].get();
+	mazeRitem->Geo = mGeometries["shapeGeo"].get();
+	mazeRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	mazeRitem->IndexCount = mazeRitem->Geo->DrawArgs["maze"].IndexCount;
+	mazeRitem->StartIndexLocation = mazeRitem->Geo->DrawArgs["maze"].StartIndexLocation;
+	mazeRitem->BaseVertexLocation = mazeRitem->Geo->DrawArgs["maze"].BaseVertexLocation;
+	mRitemLayer[(int)RenderLayer::Opaque].push_back(mazeRitem.get());
+
+
+	auto maze1Ritem = std::make_unique<RenderItem>();
+	XMStoreFloat4x4(&maze1Ritem->World, XMMatrixScaling(8.0f, 3.0f, 1.0f)* XMMatrixTranslation(-5.0f, 2.5f, -32.0f));
+	maze1Ritem->ObjCBIndex = 22;
+	maze1Ritem->Mat = mMaterials["maze0"].get();
+	maze1Ritem->Geo = mGeometries["shapeGeo"].get();
+	maze1Ritem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	maze1Ritem->IndexCount = maze1Ritem->Geo->DrawArgs["maze"].IndexCount;
+	maze1Ritem->StartIndexLocation = maze1Ritem->Geo->DrawArgs["maze"].StartIndexLocation;
+	maze1Ritem->BaseVertexLocation = maze1Ritem->Geo->DrawArgs["maze"].BaseVertexLocation;
+	mRitemLayer[(int)RenderLayer::Opaque].push_back(maze1Ritem.get());
+	
+	auto maze2Ritem = std::make_unique<RenderItem>();
+	XMStoreFloat4x4(&maze2Ritem->World, XMMatrixScaling(8.0f, 3.0f, 1.0f)* XMMatrixTranslation(-5.0f, 2.5f, -15.0f));
+	maze2Ritem->ObjCBIndex = 23;
+	maze2Ritem->Mat = mMaterials["maze0"].get();
+	maze2Ritem->Geo = mGeometries["shapeGeo"].get();
+	maze2Ritem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	maze2Ritem->IndexCount = maze2Ritem->Geo->DrawArgs["maze"].IndexCount;
+	maze2Ritem->StartIndexLocation = maze2Ritem->Geo->DrawArgs["maze"].StartIndexLocation;
+	maze2Ritem->BaseVertexLocation = maze2Ritem->Geo->DrawArgs["maze"].BaseVertexLocation;
+	mRitemLayer[(int)RenderLayer::Opaque].push_back(maze2Ritem.get());
+	
+	auto maze3Ritem = std::make_unique<RenderItem>();
+	XMStoreFloat4x4(&maze3Ritem->World, XMMatrixScaling(8.0f, 3.0f, 1.0f)* XMMatrixTranslation(5.0f, 2.5f, -15.0f));
+	maze3Ritem->ObjCBIndex = 24;
+	maze3Ritem->Mat = mMaterials["maze0"].get();
+	maze3Ritem->Geo = mGeometries["shapeGeo"].get();
+	maze3Ritem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	maze3Ritem->IndexCount = maze3Ritem->Geo->DrawArgs["maze"].IndexCount;
+	maze3Ritem->StartIndexLocation = maze3Ritem->Geo->DrawArgs["maze"].StartIndexLocation;
+	maze3Ritem->BaseVertexLocation = maze3Ritem->Geo->DrawArgs["maze"].BaseVertexLocation;
+	mRitemLayer[(int)RenderLayer::Opaque].push_back(maze3Ritem.get());
+	
+	auto maze4Ritem = std::make_unique<RenderItem>();
+	XMStoreFloat4x4(&maze4Ritem->World, XMMatrixScaling(1.0f, 3.0f, 18.0f)* XMMatrixTranslation(9.0f, 2.5f, -23.5f));
+	maze4Ritem->ObjCBIndex = 25;
+	maze4Ritem->Mat = mMaterials["maze0"].get();
+	maze4Ritem->Geo = mGeometries["shapeGeo"].get();
+	maze4Ritem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	maze4Ritem->IndexCount = maze4Ritem->Geo->DrawArgs["maze"].IndexCount;
+	maze4Ritem->StartIndexLocation = maze4Ritem->Geo->DrawArgs["maze"].StartIndexLocation;
+	maze4Ritem->BaseVertexLocation = maze4Ritem->Geo->DrawArgs["maze"].BaseVertexLocation;
+	mRitemLayer[(int)RenderLayer::Opaque].push_back(maze4Ritem.get());
+	
+	auto maze5Ritem = std::make_unique<RenderItem>();
+	XMStoreFloat4x4(&maze5Ritem->World, XMMatrixScaling(1.0f, 3.0f, 18.0f)* XMMatrixTranslation(-9.0f, 2.5f, -23.5f));
+	maze5Ritem->ObjCBIndex = 26;
+	maze5Ritem->Mat = mMaterials["maze0"].get();
+	maze5Ritem->Geo = mGeometries["shapeGeo"].get();
+	maze5Ritem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	maze5Ritem->IndexCount = maze5Ritem->Geo->DrawArgs["maze"].IndexCount;
+	maze5Ritem->StartIndexLocation = maze5Ritem->Geo->DrawArgs["maze"].StartIndexLocation;
+	maze5Ritem->BaseVertexLocation = maze5Ritem->Geo->DrawArgs["maze"].BaseVertexLocation;
+	mRitemLayer[(int)RenderLayer::Opaque].push_back(maze5Ritem.get());
+	
+	auto maze6Ritem = std::make_unique<RenderItem>();
+	XMStoreFloat4x4(&maze6Ritem->World, XMMatrixScaling(1.0f, 3.0f, 6.0f)* XMMatrixTranslation(1.5f, 2.5f, -18.0f));
+	maze6Ritem->ObjCBIndex = 27;
+	maze6Ritem->Mat = mMaterials["maze0"].get();
+	maze6Ritem->Geo = mGeometries["shapeGeo"].get();
+	maze6Ritem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	maze6Ritem->IndexCount = maze6Ritem->Geo->DrawArgs["maze"].IndexCount;
+	maze6Ritem->StartIndexLocation = maze6Ritem->Geo->DrawArgs["maze"].StartIndexLocation;
+	maze6Ritem->BaseVertexLocation = maze6Ritem->Geo->DrawArgs["maze"].BaseVertexLocation;
+	mRitemLayer[(int)RenderLayer::Opaque].push_back(maze6Ritem.get());
+	
+	auto maze7Ritem = std::make_unique<RenderItem>();
+	XMStoreFloat4x4(&maze7Ritem->World, XMMatrixScaling(1.0f, 3.0f, 6.0f)* XMMatrixTranslation(-1.5f, 2.5f, -29.0f));
+	maze7Ritem->ObjCBIndex = 28;
+	maze7Ritem->Mat = mMaterials["maze0"].get();
+	maze7Ritem->Geo = mGeometries["shapeGeo"].get();
+	maze7Ritem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	maze7Ritem->IndexCount = maze7Ritem->Geo->DrawArgs["maze"].IndexCount;
+	maze7Ritem->StartIndexLocation = maze7Ritem->Geo->DrawArgs["maze"].StartIndexLocation;
+	maze7Ritem->BaseVertexLocation = maze7Ritem->Geo->DrawArgs["maze"].BaseVertexLocation;
+	mRitemLayer[(int)RenderLayer::Opaque].push_back(maze7Ritem.get());
+	
+	auto maze8Ritem = std::make_unique<RenderItem>();
+	XMStoreFloat4x4(&maze8Ritem->World, XMMatrixScaling(10.0f, 3.0f, 1.0f)* XMMatrixTranslation(-0.5f, 2.5f, -26.0f));
+	maze8Ritem->ObjCBIndex = 29;
+	maze8Ritem->Mat = mMaterials["maze0"].get();
+	maze8Ritem->Geo = mGeometries["shapeGeo"].get();
+	maze8Ritem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	maze8Ritem->IndexCount = maze8Ritem->Geo->DrawArgs["maze"].IndexCount;
+	maze8Ritem->StartIndexLocation = maze8Ritem->Geo->DrawArgs["maze"].StartIndexLocation;
+	maze8Ritem->BaseVertexLocation = maze8Ritem->Geo->DrawArgs["maze"].BaseVertexLocation;
+	mRitemLayer[(int)RenderLayer::Opaque].push_back(maze8Ritem.get());
+	
+	auto maze9Ritem = std::make_unique<RenderItem>();
+	XMStoreFloat4x4(&maze9Ritem->World, XMMatrixScaling(10.0f, 3.0f, 1.0f)* XMMatrixTranslation(0.5f, 2.5f, -21.0f));
+	maze9Ritem->ObjCBIndex = 30;
+	maze9Ritem->Mat = mMaterials["maze0"].get();
+	maze9Ritem->Geo = mGeometries["shapeGeo"].get();
+	maze9Ritem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	maze9Ritem->IndexCount = maze9Ritem->Geo->DrawArgs["maze"].IndexCount;
+	maze9Ritem->StartIndexLocation = maze9Ritem->Geo->DrawArgs["maze"].StartIndexLocation;
+	maze9Ritem->BaseVertexLocation = maze9Ritem->Geo->DrawArgs["maze"].BaseVertexLocation;
+	mRitemLayer[(int)RenderLayer::Opaque].push_back(maze9Ritem.get());
 
 	mAllRitems.push_back(std::move(grid2Ritem));
 	mAllRitems.push_back(std::move(pentagonRitem));
@@ -1834,9 +1942,22 @@ void TreeBillboardsApp::BuildRenderItems()
 	mAllRitems.push_back(std::move(diamondRitem));
 	mAllRitems.push_back(std::move(pedastalRitem));
     mAllRitems.push_back(std::move(wavesRitem));
+    mAllRitems.push_back(std::move(mazeRitem));
+    mAllRitems.push_back(std::move(maze1Ritem));
+    mAllRitems.push_back(std::move(maze2Ritem));
+    mAllRitems.push_back(std::move(maze3Ritem));
+    mAllRitems.push_back(std::move(maze4Ritem));
+    mAllRitems.push_back(std::move(maze5Ritem));
+	mAllRitems.push_back(std::move(maze6Ritem));
+	mAllRitems.push_back(std::move(maze7Ritem));
+	mAllRitems.push_back(std::move(maze8Ritem));
+	mAllRitems.push_back(std::move(maze9Ritem));
     /*mAllRitems.push_back(std::move(gridRitem));*/
 	/*mAllRitems.push_back(std::move(boxRitem));*/
+	
 	mAllRitems.push_back(std::move(treeSpritesRitem));
+	
+	
 }
 
 void TreeBillboardsApp::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<RenderItem*>& ritems)

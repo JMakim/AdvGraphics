@@ -127,6 +127,7 @@ public:
 
 	MeshData CreateWalls(float width, float height, float depth, uint32 numSubdivisions);
 
+	MeshData CreateMazeBlock(float width, float height, float depth, uint32 numSubdivisions);
 
 	///<summary>
 	/// Creates a quad aligned with the screen.  This is useful for postprocessing and screen effects.
